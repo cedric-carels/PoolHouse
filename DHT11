@@ -1,0 +1,58 @@
+int led_CV = 11;       // rood led
+int led_airco = 10;       // blauw led
+
+#include "DHT.h";
+#define DHTPIN A2
+#define DHTTYPE DHT11
+
+int minTemp = 24;
+int maxTemp = 28;
+DHT dht(DHTPIN, DHTTYPE);
+int CV = LOW;
+int airco = LOW;
+
+void setup() {
+ Serial.begin(9600);
+
+ pinMode (led_CV, OUTPUT);      //rode led als output
+ pinMode (led_airco, OUTPUT);      //blauw led als output
+
+ dht.begin();
+}
+
+void loop() {
+  float h = dht.readHumidity();
+  float t = dht.readTemperature();
+
+  Serial.print(F("Vochtigheid: "));
+  Serial.print(h);
+  Serial.println(F("%"));
+  Serial.print(F("Temperatuur: "));
+  Serial.print(t);
+  Serial.println(F("°C"));  
+  Serial.print("CV:");
+  Serial.println (CV);
+  Serial.print("Airco:");
+  Serial.println (airco);
+  
+  
+  if (t<minTemp){
+    digitalWrite(led_CV,HIGH);
+    CV = HIGH;
+    }
+    else{
+      digitalWrite(led_CV,LOW);
+      CV = LOW;
+    }
+  if (t>maxTemp){
+    digitalWrite(led_airco,HIGH);
+    airco = HIGH;
+    }
+    else{
+      digitalWrite(led_airco,LOW);
+      airco = LOW;   
+    }
+
+   delay(2000);
+
+}
