@@ -1,0 +1,29 @@
+const int button = 2;             // het nummer of het pushbutton pin
+const int led_binnen =  13;       // het nummer of het LED pin
+
+int buttonCurrent; 
+int buttonPrevious =LOW;
+int ledState =LOW;                // het LED start LOW als je upload doet
+ 
+void setup() {
+  pinMode(led_binnen, OUTPUT);      // initialize LED pin als output 
+  pinMode(button, INPUT);           // initialize button pin als input 
+}
+ 
+void loop() {
+  buttonCurrent = digitalRead(button);   // read the button state
+  Serial.print("Button:");
+  Serial.println(ledState);  
+ 
+  if (buttonCurrent == HIGH && buttonPrevious == LOW)
+  {
+    if (ledState == HIGH)
+    {
+      ledState = LOW;
+    }
+    else
+    {ledState = HIGH;
+    }
+  }
+digitalWrite(led_binnen, ledState);
+}
