@@ -1,100 +1,80 @@
-#include <DHT.h>
-#include <lmic.h>
+#include <DHT.h>          
+#include <lmic.h>         
 #include <hal/hal.h>
 #include <SPI.h>
 
 //Definiëren van LDR, DHTpin, DHTtype, Minimum en Maximum Temperatuur
-#define LDRPIN A0
 #define DHTPIN A2
 #define MINTEMP 24
 #define MAXTEMP 28
 #define DHTTYPE DHT11
 DHT dht(DHTPIN, DHTTYPE);
 
-//Datattype definiëren zodat dit als één geheel wordt beschouwd (als statement)
-struct MY_CONFIG {
-  int led_binnen;
-  int led_buiten;
-  int led_CV;
-  int led_airco;
-  int button;
-  int ldr;
-  
-  int buttonCurrent;
-  int buttonPrevious;
-  int ledState;
-  int temp;
-  int vocht;
-  int CV;
-  int airco;
-  
-};
+int button = 2;               //nummer van drukknop pin
+int led_binnen = 13;          //nummer van LED binnen (groen) pin
+int buttonCurrent;
+int buttonPrevious = LOW;
+int ledState = LOW;           //led start LOW
+int LDR = A0;                 //Set A0 (Analog Input) for LDR
+int value;
+int led_buiten = 12;          //nummer van LED buiten (geel) pin
+int led_cv = 5;              //nummer van LED cv (rood) pin
+int led_ventilatie = 8;      //nummer van LED ventilatie (blauw) pin
 
-struct MY_CONFIG config_Cedric {    
-  13, // Led groen (binnenlicht)
-  12, // Led geel (buitenlicht)
-  5,  // Led rood (cv)
-  8,  // Led blauw (airco)
-  2,  // Drukknop binnenlicht
-  LDRPIN, //LDR
-  
-  0,  // int buttonCurrent
-  0,  // int buttonPrevious
-  0,  // int ledState
-  0,  // int temp
-  0,  // int vocht
-  0,  // int CV
-  0,  // int airco
-};
+int temperatuur = 0;
+int vochtigheid = 0;
+int cv = 0;
+int ventilatie=0;
 
 void setup_poolhouse(){
- Serial.begin(9600);
- 
- pinMode(config_Cedric.led_binnen, OUTPUT);    //groene led als output
- pinMode(config_Cedric.led_buiten, OUTPUT);    //gele led als output
- pinMode(config_Cedric.led_CV, OUTPUT);        //rode led als output
- pinMode(config_Cedric.led_airco, OUTPUT);     //blauwe led als output
+  Serial.begin(9600);
+  pinMode(led_binnen, OUTPUT);      //initialiseert LED binnen (groen) als output
+  pinMode(button, INPUT);           //initialiseert drukknop als input
+  pinMode(led_buiten, OUTPUT);      //initialiseert LED buiten (geel) als output
+  pinMode(led_cv, OUTPUT);          //initialiseert LED cv (rood) als output
+  pinMode(led_ventilatie, OUTPUT);  //initialiseert LED ventilatie (blauw) als output
 
- pinMode(config_Cedric.button, INPUT);         //button als input
-
- dht.begin();
+  dht.begin();
 }
 
 void readButton(){
-  config_Cedric.buttonCurrent = digitalRead(config_Cedric.button);
-  Serial.print("Button:");
-  Serial.println(config_Cedric.ledState);
-
-  if (config_Cedric.buttonCurrent == HIGH && config_Cedric.buttonPrevious == LOW)
+  buttonCurrent = digitalRead(button);   // read the button state
+  Serial.print("Drukknop:");
+  Serial.println(ledState);  
+ 
+  if (buttonCurrent == HIGH && buttonPrevious == LOW)
   {
-    if (config_Cedric.ledState == HIGH)
+    if (ledState == HIGH)
     {
-      config_Cedric.ledState = LOW;
+      ledState = LOW;
     }
-    else{
-      config_Cedric.ledState = HIGH;
+    else
+    {ledState = HIGH;
     }
   }
- digitalWrite(config_Cedric.led_binnen, config_Cedric.ledState);
+digitalWrite(led_binnen, ledState);
 }
 
-void readTemp() {
- int value = analogRead(config_Cedric.ldr);              // lees het value van LDR
- Serial.print("Lux:");
- Serial.println(value);
- 
- if(value < 950){
-    digitalWrite(config_Cedric.led_buiten, HIGH);   // als buiten donker is gaat led aan
+void readTemperatuur(){
+  //LDR
+  value = analogRead(LDR);      //leest de waarde van de LDR
+  Serial.print("Lux:");
+  Serial.println(value);
+
+  if(value<950){
+    digitalWrite(led_buiten, HIGH);   //Led brandt als het donker is
   }
-  else{
-    digitalWrite(config_Cedric.led_buiten, LOW);    // als buiten niet donker is gaat led uit  
+  else
+  {
+    digitalWrite(led_buiten,LOW);    //Led wordt uitgeschakeld als het licht is
   }
-  
+
+  //TEMPERATUUR & VOCHTIGHEID
   float h = dht.readHumidity();
   float t = dht.readTemperature();
-  
-  config_Cedric.temp = dht.readTemperature();
-  config_Cedric.vocht = dht.readHumidity();
+
+  temperatuur = dht.readTemperature();
+  vochtigheid=dht.readHumidity();
 
   Serial.print(F("Vochtigheid: "));
   Serial.print(h);
@@ -103,31 +83,32 @@ void readTemp() {
   Serial.print(t);
   Serial.println(F("°C"));  
   Serial.print("CV:");
-  Serial.println (config_Cedric.CV);
-  Serial.print("Airco:");
-  Serial.println (config_Cedric.airco);
-    
-  if (t < MINTEMP){
-    digitalWrite(config_Cedric.led_CV, HIGH);
-    config_Cedric.CV = HIGH;
-    }
-    else{
-      digitalWrite(config_Cedric.led_CV, LOW);
-      config_Cedric.CV = LOW;
-    }
-  if (t > MAXTEMP){
-    digitalWrite(config_Cedric.led_airco, HIGH);
-    config_Cedric.airco = HIGH;
-    }
-    else{
-      digitalWrite(config_Cedric.led_airco, LOW);
-      config_Cedric.airco = LOW;   
-    }
+  Serial.println (cv);
+  Serial.print("Ventilatie:");
+  Serial.println (ventilatie);
+
+  if (t<MINTEMP){
+    digitalWrite(led_cv, HIGH);   //Led brandt als temperatuur onder de minimum temperatuur is
+    cv=HIGH;
+  }
+  else {
+    digitalWrite(led_cv, LOW);    //Led brandt niet als temperatuur boven de minimum temperatuur is
+    cv=LOW;
+  }
+
+  if (t>MAXTEMP){
+    digitalWrite(led_ventilatie, HIGH);   //Led brandt als temperatuur hoger is dan maximum temperatuur is
+    ventilatie=HIGH;
+  }
+  else {
+    digitalWrite(led_ventilatie, LOW);    //Led brandt niet als temperatuur onder de maximum temperatuur is
+    ventilatie=LOW;
+  }
 }
 
-void runOnce_poolhouse() {
+void runOnce_poolhouse(){
   readButton();
-  readTemp();
+  readTemperatuur();
 }
 
 // LoRaWAN NwkSKey, network session key
@@ -177,27 +158,27 @@ void do_send(osjob_t* j){
         // Prepare upstream data transmission at the next possible time.
         uint8_t mydata[] = "UUUU??";
         // BINNEN LED
-        if (config_Cedric.ledState == HIGH) {
+        if (ledState == HIGH) {
           mydata[0] = "A";
         }
         // BUITEN LED
-        if (config_Cedric.led_buiten == HIGH) {
+        if (led_buiten == HIGH) {
           mydata[1] = "A";
         }
         // CV
-        if (config_Cedric.CV == HIGH) {
+        if (cv == HIGH) {
           mydata[2] = "A";
         }
-        // AIRCO
-        if (config_Cedric.airco == HIGH) {
+        // VENTILATIE
+        if (ventilatie == HIGH) {
           mydata[3] = "A";
         }
-        //TEMP
-        float roundedTemp = round(config_Cedric.temp);
+        //TEMPERATUUR
+        float roundedTemp = round(temperatuur);
         mydata[4] = (uint8_t)roundedTemp + 0x30;
 
-        //VOCHT
-        float roundedVocht = round(config_Cedric.vocht);
+        //VOCHTIGHEID
+        float roundedVocht = round(vochtigheid);
         mydata[5] = (uint8_t)roundedVocht + 0x30;
 
         LMIC_setTxData2(1, mydata, sizeof(mydata)-1, 0);
